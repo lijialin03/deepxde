@@ -12,7 +12,11 @@ from . import losses as losses_module
 from . import metrics as metrics_module
 from . import optimizers
 from . import utils
-from .backend import backend_name, tf, torch, jax, paddle
+from .backend import backend_name
+from .backend import jax
+from .backend import paddle
+from .backend import tf
+from .backend import torch
 from .callbacks import CallbackList
 from .utils import list_to_str
 
@@ -777,7 +781,7 @@ class Model:
             )
 
             n_iter = self.opt.state_dict()["state"][0]["n_iter"]
-            if prev_n_iter == n_iter:
+            if prev_n_iter == n_iter - 1:
                 # Converged
                 break
 
@@ -809,7 +813,7 @@ class Model:
             )
 
             n_iter = self.opt.state_dict()["state"]["n_iter"]
-            if prev_n_iter == n_iter:
+            if prev_n_iter == n_iter - 1:
                 # Converged
                 break
 
