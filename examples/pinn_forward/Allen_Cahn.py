@@ -6,11 +6,20 @@ import deepxde as dde
 import numpy as np
 from scipy.io import loadmat
 # Import tf if using backend tensorflow.compat.v1 or tensorflow
-from deepxde.backend import tf
+# from deepxde.backend import tf
 # Import torch if using backend pytorch
 # import torch
 # Import paddle if using backend paddle
 # import paddle
+
+if dde.backend.backend_name == "paddle":
+    import paddle
+
+    cos = paddle.cos
+elif dde.backend.backend_name == "pytorch":
+    import torch
+
+    cos = torch.cos
 
 
 def gen_testdata():
@@ -38,8 +47,8 @@ def pde(x, y):
 
 # Hard restraints on initial + boundary conditions
 # Backend tensorflow.compat.v1 or tensorflow
-def output_transform(x, y):
-    return x[:, 0:1]**2 * tf.cos(np.pi * x[:, 0:1]) + x[:, 1:2] * (1 - x[:, 0:1]**2) * y
+# def output_transform(x, y):
+#     return x[:, 0:1]**2 * tf.cos(np.pi * x[:, 0:1]) + x[:, 1:2] * (1 - x[:, 0:1]**2) * y
 
 # Backend pytorch
 # def output_transform(x, y):
@@ -48,6 +57,9 @@ def output_transform(x, y):
 # Backend paddle
 # def output_transform(x, y):
 #     return x[:, 0:1]**2 * paddle.cos(np.pi * x[:, 0:1]) + x[:, 1:2] * (1 - x[:, 0:1]**2) * y
+
+def output_transform(x, y):
+    return x[:, 0:1]**2 * cos(np.pi * x[:, 0:1]) + x[:, 1:2] * (1 - x[:, 0:1]**2) * y
 
 data = dde.data.TimePDE(geomtime, pde, [], num_domain=8000, num_boundary=400, num_initial=800)
 net = dde.nn.FNN([2] + [20] * 3 + [1], "tanh", "Glorot normal")

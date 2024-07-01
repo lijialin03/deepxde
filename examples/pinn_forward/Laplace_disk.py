@@ -2,11 +2,27 @@
 import deepxde as dde
 import numpy as np
 # Import tf if using backend tensorflow.compat.v1 or tensorflow
-from deepxde.backend import tf
+# from deepxde.backend import tf
 # Import torch if using backend pytorch
 # import torch
 # Import paddle if using backend paddle
 # import paddle
+
+
+if dde.backend.backend_name == "paddle":
+    import paddle
+
+    exp = paddle.exp
+    sin = paddle.sin
+    concat = paddle.concat
+    cos = paddle.cos
+elif dde.backend.backend_name == "pytorch":
+    import torch
+
+    exp = torch.exp
+    sin = torch.sin
+    concat = torch.cat
+    cos = torch.cos
 
 
 def pde(x, y):
@@ -36,10 +52,10 @@ net = dde.nn.FNN([2] + [20] * 3 + [1], "tanh", "Glorot normal")
 # Use [r*sin(theta), r*cos(theta)] as features,
 # so that the network is automatically periodic along the theta coordinate.
 # Backend tensorflow.compat.v1 or tensorflow
-def feature_transform(x):
-    return tf.concat(
-        [x[:, 0:1] * tf.sin(x[:, 1:2]), x[:, 0:1] * tf.cos(x[:, 1:2])], axis=1
-    )
+# def feature_transform(x):
+#     return tf.concat(
+#         [x[:, 0:1] * tf.sin(x[:, 1:2]), x[:, 0:1] * tf.cos(x[:, 1:2])], axis=1
+#     )
 # Backend pytorch
 # def feature_transform(x):
 #     return torch.cat(
@@ -50,6 +66,11 @@ def feature_transform(x):
 #     return paddle.concat(
 #         [x[:, 0:1] * paddle.sin(x[:, 1:2]), x[:, 0:1] * paddle.cos(x[:, 1:2])], axis=1
 #     )
+
+def feature_transform(x):
+    return concat(
+        [x[:, 0:1] * sin(x[:, 1:2]), x[:, 0:1] * cos(x[:, 1:2])], 1
+    )
 
 net.apply_feature_transform(feature_transform)
 

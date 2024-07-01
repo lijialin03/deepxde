@@ -2,11 +2,23 @@
 import deepxde as dde
 import numpy as np
 # Backend tensorflow.compat.v1 or tensorflow
-from deepxde.backend import tf
+# from deepxde.backend import tf
 # Backend pytorch
 # import torch
 # Backend paddle
 # import paddle
+
+
+if dde.backend.backend_name == "paddle":
+    import paddle
+
+    exp = paddle.exp
+    sin = paddle.sin
+elif dde.backend.backend_name == "pytorch":
+    import torch
+
+    exp = torch.exp
+    sin = torch.sin
 
 
 def pde(x, y):
@@ -14,17 +26,17 @@ def pde(x, y):
     dy_xx = dde.grad.hessian(y, x, i=0, j=0)
     d = 1
     # Backend tensorflow.compat.v1 or tensorflow
-    return (
-        dy_t
-        - d * dy_xx
-        - tf.exp(-x[:, 1:])
-        * (
-            3 * tf.sin(2 * x[:, 0:1]) / 2
-            + 8 * tf.sin(3 * x[:, 0:1]) / 3
-            + 15 * tf.sin(4 * x[:, 0:1]) / 4
-            + 63 * tf.sin(8 * x[:, 0:1]) / 8
-        )
-    )
+    # return (
+    #     dy_t
+    #     - d * dy_xx
+    #     - tf.exp(-x[:, 1:])
+    #     * (
+    #         3 * tf.sin(2 * x[:, 0:1]) / 2
+    #         + 8 * tf.sin(3 * x[:, 0:1]) / 3
+    #         + 15 * tf.sin(4 * x[:, 0:1]) / 4
+    #         + 63 * tf.sin(8 * x[:, 0:1]) / 8
+    #     )
+    # )
     # Backend pytorch
     # return (
     #     dy_t
@@ -47,6 +59,16 @@ def pde(x, y):
     #        + 63 * paddle.sin(8 * x[:, 0:1]) / 8
     #     )
     # )
+    return (
+        dy_t
+        - d * dy_xx
+        - exp(-x[:, 1:])
+        * (3 * sin(2 * x[:, 0:1]) / 2
+           + 8 * sin(3 * x[:, 0:1]) / 3
+           + 15 * sin(4 * x[:, 0:1]) / 4
+           + 63 * sin(8 * x[:, 0:1]) / 8
+        )
+    )
 
 
 def func(x):
@@ -73,15 +95,15 @@ initializer = "Glorot uniform"
 net = dde.nn.FNN(layer_size, activation, initializer)
 
 # Backend tensorflow.compat.v1 or tensorflow
-def output_transform(x, y):
-    return (
-        x[:, 1:2] * (np.pi ** 2 - x[:, 0:1] ** 2) * y
-        + tf.sin(x[:, 0:1])
-        + tf.sin(2 * x[:, 0:1]) / 2
-        + tf.sin(3 * x[:, 0:1]) / 3
-        + tf.sin(4 * x[:, 0:1]) / 4
-        + tf.sin(8 * x[:, 0:1]) / 8
-    )
+# def output_transform(x, y):
+    # return (
+    #     x[:, 1:2] * (np.pi ** 2 - x[:, 0:1] ** 2) * y
+    #     + tf.sin(x[:, 0:1])
+    #     + tf.sin(2 * x[:, 0:1]) / 2
+    #     + tf.sin(3 * x[:, 0:1]) / 3
+    #     + tf.sin(4 * x[:, 0:1]) / 4
+    #     + tf.sin(8 * x[:, 0:1]) / 8
+    # )
 # Backend pytorch
 # def output_transform(x, y):
 #     return (
@@ -102,6 +124,16 @@ def output_transform(x, y):
 #         + paddle.sin(4 * x[:, 0:1]) / 4
 #         + paddle.sin(8 * x[:, 0:1]) / 8
 #    )
+
+def output_transform(x, y):
+    return (
+        x[:, 1:2] * (np.pi ** 2 - x[:, 0:1] ** 2) * y
+        + sin(x[:, 0:1])
+        + sin(2 * x[:, 0:1]) / 2
+        + sin(3 * x[:, 0:1]) / 3
+        + sin(4 * x[:, 0:1]) / 4
+        + sin(8 * x[:, 0:1]) / 8
+   )
 
 net.apply_output_transform(output_transform)
 

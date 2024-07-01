@@ -4,13 +4,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import integrate
 # Import tf if using backend tensorflow.compat.v1 or tensorflow
-from deepxde.backend import tf
+# from deepxde.backend import tf
 # Import torch if using backend pytorch
 # import torch
 # Import paddle if using backend paddle
 # import paddle
 # Import jax.numpy if using backend jax
 # import jax.numpy as jnp
+
+if dde.backend.backend_name == "paddle":
+    import paddle
+
+    exp = paddle.exp
+    sin = paddle.sin
+    concat = paddle.concat
+    tanh = paddle.tanh
+elif dde.backend.backend_name == "pytorch":
+    import torch
+
+    exp = torch.exp
+    sin = torch.sin
+    concat = torch.cat
+    tanh = torch.tanh
 
 ub = 200
 rb = 20
@@ -60,19 +75,19 @@ initializer = "Glorot normal"
 net = dde.nn.FNN(layer_size, activation, initializer)
 
 # Backend tensorflow.compat.v1 or tensorflow
-def input_transform(t):
-    return tf.concat(
-        (
-            t,
-            tf.sin(t),
-            tf.sin(2 * t),
-            tf.sin(3 * t),
-            tf.sin(4 * t),
-            tf.sin(5 * t),
-            tf.sin(6 * t),
-        ),
-        axis=1,
-    )
+# def input_transform(t):
+    # return tf.concat(
+    #     (
+    #         t,
+    #         tf.sin(t),
+    #         tf.sin(2 * t),
+    #         tf.sin(3 * t),
+    #         tf.sin(4 * t),
+    #         tf.sin(5 * t),
+    #         tf.sin(6 * t),
+    #     ),
+    #     axis=1,
+    # )
 # Backend pytorch
 # def input_transform(t):
 #     return torch.cat(
@@ -101,12 +116,20 @@ def input_transform(t):
 #         axis=1
 #     )
 
+def input_transform(t):
+    return concat(
+        (
+            sin(t),
+        ),
+        1,
+    )
+
 # hard constraints: x(0) = 100, y(0) = 15
 # Backend tensorflow.compat.v1 or tensorflow
-def output_transform(t, y):
-    y1 = y[:, 0:1]
-    y2 = y[:, 1:2]
-    return tf.concat([y1 * tf.tanh(t) + 100 / ub, y2 * tf.tanh(t) + 15 / ub], axis=1)
+# def output_transform(t, y):
+#     y1 = y[:, 0:1]
+#     y2 = y[:, 1:2]
+#     return tf.concat([y1 * tf.tanh(t) + 100 / ub, y2 * tf.tanh(t) + 15 / ub], axis=1)
 # Backend pytorch
 # def output_transform(t, y):
 #     y1 = y[:, 0:1]
@@ -125,6 +148,11 @@ def output_transform(t, y):
 #         [y1 * jnp.tanh(t) + 100 / ub, y2 * jnp.tanh(t) + 15 / ub],
 #         axis=1
 #     ).squeeze()
+
+def output_transform(t, y):
+    y1 = y[:, 0:1]
+    y2 = y[:, 1:2]
+    return concat([y1 * tanh(t) + 100 / ub, y2 * tanh(t) + 15 / ub], 1)
 
 net.apply_feature_transform(input_transform)
 net.apply_output_transform(output_transform)

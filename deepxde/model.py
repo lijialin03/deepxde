@@ -278,10 +278,10 @@ class Model:
             with torch.no_grad():
                 if isinstance(inputs, tuple):
                     inputs = tuple(
-                        map(lambda x: torch.as_tensor(x).requires_grad_(), inputs)
+                        map(lambda x: torch.as_tensor(x,dtype=torch.float32).requires_grad_(), inputs)
                     )
                 else:
-                    inputs = torch.as_tensor(inputs)
+                    inputs = torch.as_tensor(inputs,dtype=torch.float32)
                     inputs.requires_grad_()
             # Clear cached Jacobians and Hessians.
             grad.clear()
@@ -294,11 +294,13 @@ class Model:
             self.net.train(mode=training)
             if isinstance(inputs, tuple):
                 inputs = tuple(
-                    map(lambda x: torch.as_tensor(x).requires_grad_(), inputs)
+                    map(lambda x: torch.as_tensor(x,dtype=torch.float32).requires_grad_(), inputs)
                 )
             else:
-                inputs = torch.as_tensor(inputs)
+                inputs = torch.as_tensor(inputs,dtype=torch.float32)
                 inputs.requires_grad_()
+            # print("inputs.shape",inputs.shape)
+            # exit()
             outputs_ = self.net(inputs)
             # Data losses
             if targets is not None:
@@ -311,6 +313,9 @@ class Model:
             losses = torch.stack(losses)
             # Weighted losses
             if self.loss_weights is not None:
+                # print("losses",losses)
+                # print("tpye(losses)",type(losses))
+                # print("self.loss_weights",self.loss_weights)
                 losses *= torch.as_tensor(self.loss_weights)
             # Clear cached Jacobians and Hessians.
             grad.clear()
@@ -440,10 +445,13 @@ class Model:
             with paddle.no_grad():
                 if isinstance(inputs, tuple):
                     inputs = tuple(
-                        map(lambda x: paddle.to_tensor(x, stop_gradient=False), inputs)
+                        map(lambda x: paddle.to_tensor(x, stop_gradient=False,dtype=paddle.get_default_dtype()), inputs)
                     )
                 else:
-                    inputs = paddle.to_tensor(inputs, stop_gradient=False)
+                    inputs = paddle.to_tensor(inputs, stop_gradient=False,dtype=paddle.get_default_dtype())
+                # for input in inputs:
+                #     print(input.shape)
+                # exit()
                 return self.net(inputs)
 
         def outputs_losses(training, inputs, targets, auxiliary_vars, losses_fn):
@@ -455,10 +463,13 @@ class Model:
 
             if isinstance(inputs, tuple):
                 inputs = tuple(
-                    map(lambda x: paddle.to_tensor(x, stop_gradient=False), inputs)
+                    map(lambda x: paddle.to_tensor(x, stop_gradient=False,dtype=paddle.get_default_dtype()), inputs)
                 )
             else:
-                inputs = paddle.to_tensor(inputs, stop_gradient=False)
+                inputs = paddle.to_tensor(inputs, stop_gradient=False,dtype=paddle.get_default_dtype())
+            # for input in inputs:
+            #     print(input.shape)
+            # exit()
             outputs_ = self.net(inputs)
             # Data losses
             if targets is not None:
@@ -468,9 +479,13 @@ class Model:
                 losses = [losses]
             # TODO: regularization
             losses = paddle.stack(losses, axis=0)
+            # print("losses",losses)
+            # print("self.loss_weights",self.loss_weights)
             # Weighted losses
             if self.loss_weights is not None:
-                losses *= paddle.to_tensor(self.loss_weights)
+                # print("losses",losses)
+                # print("self.loss_weights",self.loss_weights)
+                losses *= paddle.to_tensor(self.loss_weights, dtype=losses.dtype)
             # Clear cached Jacobians and Hessians.
             grad.clear()
             return outputs_, losses
@@ -493,6 +508,9 @@ class Model:
         )
 
         def train_step(inputs, targets, auxiliary_vars):
+            # for input in inputs:
+            #     print(input.shape)
+            # exit()
             losses = outputs_losses_train(inputs, targets, auxiliary_vars)[1]
             total_loss = paddle.sum(losses)
             total_loss.backward()
@@ -553,6 +571,9 @@ class Model:
         return utils.to_numpy(outs[0]), utils.to_numpy(outs[1])
 
     def _train_step(self, inputs, targets, auxiliary_vars):
+        # for input in inputs:
+        #     print(input.shape)
+        # exit()
         if backend_name == "tensorflow.compat.v1":
             feed_dict = self.net.feed_dict(True, inputs, targets, auxiliary_vars)
             self.sess.run(self.train_step, feed_dict=feed_dict)
@@ -802,6 +823,7 @@ class Model:
             )
 
             n_iter = self.opt.state_dict()["state"]["n_iter"]
+            print("###",prev_n_iter, n_iter)
             if prev_n_iter == n_iter:
                 # Converged
                 break

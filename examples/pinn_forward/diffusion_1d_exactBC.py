@@ -2,13 +2,25 @@
 import deepxde as dde
 import numpy as np
 # Backend tensorflow.compat.v1 or tensorflow
-from deepxde.backend import tf
+# from deepxde.backend import tf
 # Backend pytorch
 # import torch
 # Backend jax
 # import jax.numpy as jnp
 # Backend paddle
 # import paddle
+
+
+if dde.backend.backend_name == "paddle":
+    import paddle
+
+    exp = paddle.exp
+    sin = paddle.sin
+elif dde.backend.backend_name == "pytorch":
+    import torch
+
+    exp = torch.exp
+    sin = torch.sin
 
 
 def pde(x, y):
@@ -19,12 +31,12 @@ def pde(x, y):
     # dy_t, _ = dde.grad.jacobian(y, x, i=0, j=1)
     # dy_xx, _ = dde.grad.hessian(y, x, i=0, j=0)
     # Backend tensorflow.compat.v1 or tensorflow
-    return (
-        dy_t
-        - dy_xx
-        + tf.exp(-x[:, 1:])
-        * (tf.sin(np.pi * x[:, 0:1]) - np.pi ** 2 * tf.sin(np.pi * x[:, 0:1]))
-    )
+    # return (
+    #     dy_t
+    #     - dy_xx
+    #     + tf.exp(-x[:, 1:])
+    #     * (tf.sin(np.pi * x[:, 0:1]) - np.pi ** 2 * tf.sin(np.pi * x[:, 0:1]))
+    # )
     # Backend pytorch
     # return (
     #     dy_t
@@ -46,6 +58,12 @@ def pde(x, y):
     #     + paddle.exp(-x[:, 1:])
     #     * (paddle.sin(np.pi * x[:, 0:1]) - np.pi ** 2 * paddle.sin(np.pi * x[:, 0:1]))
     # )
+    return (
+        dy_t
+        - dy_xx
+        + exp(-x[:, 1:])
+        * (sin(np.pi * x[:, 0:1]) - np.pi ** 2 * sin(np.pi * x[:, 0:1]))
+    )
 
 
 def func(x):
@@ -64,13 +82,14 @@ initializer = "Glorot uniform"
 net = dde.nn.FNN(layer_size, activation, initializer)
 net.apply_output_transform(
     # Backend tensorflow.compat.v1 or tensorflow
-    lambda x, y: x[:, 1:2] * (1 - x[:, 0:1] ** 2) * y + tf.sin(np.pi * x[:, 0:1])
+    # lambda x, y: x[:, 1:2] * (1 - x[:, 0:1] ** 2) * y + tf.sin(np.pi * x[:, 0:1])
     # Backend pytorch
     # lambda x, y: x[:, 1:2] * (1 - x[:, 0:1] ** 2) * y + torch.sin(np.pi * x[:, 0:1])
     # Backend jax
     # lambda x, y: x[..., 1:2] * (1 - x[..., 0:1] ** 2) * y + jnp.sin(np.pi * x[..., 0:1])
     # Backend paddle
     # lambda x, y: x[:, 1:2] * (1 - x[:, 0:1] ** 2) * y + paddle.sin(np.pi * x[:, 0:1])
+    lambda x, y: x[:, 1:2] * (1 - x[:, 0:1] ** 2) * y + sin(np.pi * x[:, 0:1])
 )
 
 model = dde.Model(data, net)
