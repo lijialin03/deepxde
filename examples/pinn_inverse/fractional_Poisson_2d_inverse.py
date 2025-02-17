@@ -2,9 +2,9 @@
 import deepxde as dde
 import numpy as np
 # Import tf if using backend tensorflow.compat.v1
-from deepxde.backend import tf
+# from deepxde.backend import tf
 # Import paddle if using backend paddle
-# import paddle
+import paddle
 from scipy.special import gamma
 
 
@@ -13,51 +13,51 @@ alpha = dde.Variable(1.5)
 
 
 # Backend tensorflow.compat.v1
-def fpde(x, y, int_mat):
-    r"""\int_theta D_theta^alpha u(x)"""
-    if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
-        int_mat = tf.SparseTensor(*int_mat)
-        lhs = tf.sparse_tensor_dense_matmul(int_mat, y)
-    else:
-        lhs = tf.matmul(int_mat, y)
-    lhs = lhs[:, 0]
-    lhs *= -tf.exp(tf.lgamma((1 - alpha) / 2) + tf.lgamma((2 + alpha) / 2)) / (
-        2 * np.pi ** 1.5
-    )
-    x = x[: tf.size(lhs)]
-    rhs = (
-        2 ** alpha0
-        * gamma(2 + alpha0 / 2)
-        * gamma(1 + alpha0 / 2)
-        * (1 - (1 + alpha0 / 2) * tf.reduce_sum(x ** 2, axis=1))
-    )
-    return lhs - rhs
-# Backend paddle
 # def fpde(x, y, int_mat):
 #     r"""\int_theta D_theta^alpha u(x)"""
 #     if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
-#         indices, values, shape = int_mat
-#         int_mat = paddle.sparse.sparse_coo_tensor(
-#             [[p[0] for p in indices], [p[1] for p in indices]],
-#             values,
-#             shape,
-#             stop_gradient=False
-#         )
-#         lhs = paddle.sparse.matmul(int_mat, y)
+#         int_mat = tf.SparseTensor(*int_mat)
+#         lhs = tf.sparse_tensor_dense_matmul(int_mat, y)
 #     else:
-#         lhs = paddle.mm(int_mat, y)
+#         lhs = tf.matmul(int_mat, y)
 #     lhs = lhs[:, 0]
-#     lhs *= -paddle.exp(paddle.lgamma((1 - alpha) / 2) + paddle.lgamma((2 + alpha) / 2)) / (
+#     lhs *= -tf.exp(tf.lgamma((1 - alpha) / 2) + tf.lgamma((2 + alpha) / 2)) / (
 #         2 * np.pi ** 1.5
 #     )
-#     x = x[: paddle.numel(lhs)]
+#     x = x[: tf.size(lhs)]
 #     rhs = (
 #         2 ** alpha0
 #         * gamma(2 + alpha0 / 2)
 #         * gamma(1 + alpha0 / 2)
-#         * (1 - (1 + alpha0 / 2) * paddle.sum(x ** 2, axis=1))
+#         * (1 - (1 + alpha0 / 2) * tf.reduce_sum(x ** 2, axis=1))
 #     )
 #     return lhs - rhs
+# Backend paddle
+def fpde(x, y, int_mat):
+    r"""\int_theta D_theta^alpha u(x)"""
+    if isinstance(int_mat, (list, tuple)) and len(int_mat) == 3:
+        indices, values, shape = int_mat
+        int_mat = paddle.sparse.sparse_coo_tensor(
+            [[p[0] for p in indices], [p[1] for p in indices]],
+            values,
+            shape,
+            stop_gradient=False
+        )
+        lhs = paddle.sparse.matmul(int_mat, y)
+    else:
+        lhs = paddle.mm(int_mat, y)
+    lhs = lhs[:, 0]
+    lhs *= -paddle.exp(paddle.lgamma((1 - alpha) / 2) + paddle.lgamma((2 + alpha) / 2)) / (
+        2 * np.pi ** 1.5
+    )
+    x = x[: paddle.numel(lhs)]
+    rhs = (
+        2 ** alpha0
+        * gamma(2 + alpha0 / 2)
+        * gamma(1 + alpha0 / 2)
+        * (1 - (1 + alpha0 / 2) * paddle.sum(x ** 2, axis=1))
+    )
+    return lhs - rhs
 
 
 def func(x):
@@ -82,13 +82,13 @@ data = dde.data.FPDE(
 
 net = dde.nn.FNN([2] + [20] * 4 + [1], "tanh", "Glorot normal")
 # Backend tensorflow.compat.v1
-net.apply_output_transform(
-    lambda x, y: (1 - tf.reduce_sum(x ** 2, axis=1, keepdims=True)) * y
-)
-# Backend paddle
 # net.apply_output_transform(
-#     lambda x, y: (1 - paddle.sum(x ** 2, axis=1, keepdim=True)) * y
+#     lambda x, y: (1 - tf.reduce_sum(x ** 2, axis=1, keepdims=True)) * y
 # )
+# Backend paddle
+net.apply_output_transform(
+    lambda x, y: (1 - paddle.sum(x ** 2, axis=1, keepdim=True)) * y
+)
 
 model = dde.Model(data, net)
 model.compile("adam", lr=1e-3, loss_weights=[1, 100], external_trainable_variables=[alpha])
